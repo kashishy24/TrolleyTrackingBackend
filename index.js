@@ -5,8 +5,7 @@ const middlewares = require("./src/middlewares/middlewares.js");
 const loginRoute = require("./src/controllers/loginAPI.js");
 const OperatorRoute = require("./src/controllers/OperatorScreenAPI/OperatorScreen.js");
 const MaintenaceRoute = require("./src/controllers/MaintenanceScreenAPI/BreakdownScreens.js");
-
-
+const PMRoute = require("./src/controllers/pmapi/preventiveMaintenaceAPi.js");  
 
 
 const limiter = rateLimit({
@@ -29,6 +28,7 @@ app.use(express.json());
 app.use("/api/login", loginRoute);
 app.use("/api/Operator", OperatorRoute);
 app.use("/api/Maintenance", MaintenaceRoute);
+app.use("/api/pm", PMRoute);
 const PORT = process.env.PORT || 3006;
 
 // Start the server on port 3000
