@@ -64,6 +64,69 @@ router.get("/Breakdown/Completed/TodayCount", (request, response) => {
     );
   });
 });
+//---------------------PM Plan and acK
+
+router.get("/PMPlanAckCount", (request, response) => {
+  new sqlConnection.sql.Request().query(
+    `
+    SELECT
+      SUM(CASE WHEN PMStatus IN (2, 3, 4) THEN 1 ELSE 0 END) AS PlannedCount,
+      SUM(CASE WHEN PMStatus = 5 THEN 1 ELSE 0 END) AS AcknowledgedCount
+    FROM Config_Trolley
+    `,
+    (err, result) => {
+      if (err) {
+        console.error("PM count error:", err);
+        middlewares.standardResponse(
+          response,
+          null,
+          300,
+          "Error executing query: " + err
+        );
+      } else {
+        middlewares.standardResponse(
+          response,
+          result.recordset[0],
+          200,
+          "success"
+        );
+        console.dir(result.recordset[0]);
+      }
+    }
+  );
+});
+
+
+
+//---------------- Completed PM Checklist Count (Today - Timestamp Only) ----------------
+router.get("/Checklist/Completed/TodayCount", (request, response) => {
+  const query = `
+    SELECT 
+      COUNT(*) AS CompletedChecklistTodayCount
+    FROM History_Maint_Checklist
+    WHERE CAST([TimeStamp] AS DATE) = CAST(GETDATE() AS DATE)
+  `;
+
+  new sqlConnection.sql.Request().query(query, (err, result) => {
+    if (err) {
+      console.error("Completed checklist count error:", err);
+      return middlewares.standardResponse(
+        response,
+        null,
+        300,
+        "Error fetching completed checklist count"
+      );
+    }
+
+    middlewares.standardResponse(
+      response,
+      result.recordset[0],
+      200,
+      "success"
+    );
+  });
+});
+
 
 //--------------------Plan List Screen-----------------------------
 router.get("/BreakdownPlannedTrolleys", (request, response) => {
@@ -179,7 +242,7 @@ router.get("/BreakdownAcknowledgedListandCount", (request, response) => {
     );
   });
 });
-
+ 
 //Get the trolley information to pass in next screen
 //---------------- Breakdown Details by TrolleyID ----------------
 router.get("/TrolleyInfoByTrolleyID", (request, response) => {
@@ -310,6 +373,7 @@ router.post("/Breakdown/History/Insert", (request, response) => {
   });
 });
 
+//get the end time and duration after confirm
 
 router.get("/TrolleyDurationTrolleyID", (request, response) => {
   const { trolleyId } = request.query;
