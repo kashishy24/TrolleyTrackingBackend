@@ -295,7 +295,7 @@ router.get("/trolley/history", async (req, res) => {
       SELECT TOP 50
         TrolleyID,
         LocationStatus,
-        [Timestamp]
+        CONVERT(varchar(19), Timestamp, 126) AS Timestamp
       FROM Trolley_Genealogy
       WHERE TrolleyID = @TrolleyID
       ORDER BY [Timestamp] DESC
@@ -305,7 +305,7 @@ router.get("/trolley/history", async (req, res) => {
       SELECT TOP 50
         TrolleyID,
         TrolleyStatus,
-        [Timestamp]
+     CONVERT(varchar(19), Timestamp, 126) AS Timestamp
       FROM Trolley_Genealogy
       WHERE TrolleyID = @TrolleyID
       ORDER BY [Timestamp] DESC
