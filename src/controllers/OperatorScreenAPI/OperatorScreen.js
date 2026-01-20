@@ -147,6 +147,49 @@ router.post("/update-trolley-status", async (req, res) => {
   }
 });
 
+
+//scrap update
+
+router.post('/Auth/verify-password', async (req, res) => {
+  const { username, password, trolleyId } = req.body;
+
+  if (!username || !password || !trolleyId) {
+    return middlewares.standardResponse(
+      res,
+      null,
+      300,
+      'Username, Password and TrolleyID are required'
+    );
+  }
+
+  try {
+    const request = new sqlConnection.sql.Request();
+
+    request.input('TrolleyID', sqlConnection.sql.Int, trolleyId);
+    request.input('UserName', sqlConnection.sql.VarChar, username);
+    request.input('Password', sqlConnection.sql.VarChar, password);
+
+    await request.execute('SP_Scrap_Trolley_With_Auth');
+
+    middlewares.standardResponse(
+      res,
+      null,
+      200,
+      'Scrap approved by Supervisor'
+    );
+
+  } catch (err) {
+    console.error(err);
+
+    middlewares.standardResponse(
+      res,
+      null,
+      300,
+      err.message || 'Authorization failed'
+    );
+  }
+});
+
 //----------------------------Trolley Maintenance Screen------------
 
 router.get("/trolley/current-status/:trolleyId", async (req, res) => {
