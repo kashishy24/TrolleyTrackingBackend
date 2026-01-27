@@ -100,37 +100,64 @@ router.get('/checklist', async (req, res) => {
     const pool = await sql.connect(dbConfig);
 
     const result = await pool.request().query(`
-      SELECT 
-        CL.CheckListID,
-        CL.CheckListName,
-        CP.CheckPointID,
-        CP.CheckPointName
-      FROM Exec_Maint_Checklist CL
-      INNER JOIN Exec_Maint_CheckPoint CP
-        ON CL.CheckListID = CP.CheckListID
-      ORDER BY CL.CheckListID, CP.CheckPointID
-    `);
+ SELECT 
+  CL.CheckListID,
+  CL.CheckListName,
+  CP.CheckPointCategory,
+  CP.CheckPointID,
+  CP.CheckPointName,
+  MIN(CP.CheckPointID) OVER (
+    PARTITION BY CL.CheckListID, CP.CheckPointCategory
+  ) AS CategoryOrder
+FROM Exec_Maint_Checklist CL
+INNER JOIN Exec_Maint_CheckPoint CP
+  ON CL.CheckListID = CP.CheckListID
+ORDER BY 
+  CL.CheckListID,
+  CategoryOrder,     -- ✅ category order by first inserted CP
+  CP.CheckPointID;   -- ✅ checkpoint order
+
+`);
 
     // 🔹 Group by Checklist
     const grouped = {};
-    result.recordset.forEach(row => {
-      if (!grouped[row.CheckListID]) {
-        grouped[row.CheckListID] = {
-          category: row.CheckListName,
-          checkpoints: [],
-        };
-      }
 
-      grouped[row.CheckListID].checkpoints.push({
-        id: row.CheckPointID,
-        name: row.CheckPointName,
-      });
-    });
+result.recordset.forEach(row => {
+  // Checklist level
+  if (!grouped[row.CheckListID]) {
+    grouped[row.CheckListID] = {
+      checklistId: row.CheckListID,
+      checklistName: row.CheckListName,
+      categories: {}
+    };
+  }
 
-    res.json({
-      success: true,
-      data: Object.values(grouped),
-    });
+  // Category level
+  if (!grouped[row.CheckListID].categories[row.CheckPointCategory]) {
+    grouped[row.CheckListID].categories[row.CheckPointCategory] = {
+      category: row.CheckPointCategory,
+      checkpoints: []
+    };
+  }
+
+  // Checkpoint level
+  grouped[row.CheckListID].categories[row.CheckPointCategory].checkpoints.push({
+    id: row.CheckPointID,
+    name: row.CheckPointName
+  });
+});
+
+// Convert objects → arrays
+const response = Object.values(grouped).map(cl => ({
+  ...cl,
+  categories: Object.values(cl.categories)
+}));
+
+res.json({
+  success: true,
+  data: response
+});
+
 
   } catch (err) {
     console.error(err);
